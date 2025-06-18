@@ -1,0 +1,235 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam handwritten false
+skinparam monochrome false
+skinparam shadowing false
+
+' Define packages for bounded contexts
+package "Monitoring Bounded Context" #DEEAFF {
+  ' Domain Layer
+  package "domain" #E2F0FF {
+    class MonitoringRecord {
+      id: int
+      device_id: str
+      temperature: float
+      humidity: float
+      latitude: float
+      longitude: float
+      created_at: datetime
+      +__init__(device_id, temperature, humidity, latitude, longitude, created_at, id)
+    }
+
+    class MonitoringService {
+      +__init__()
+      +create_record(device_id, temperature, humidity, latitude, longitude, created_at): MonitoringRecord
+    }
+  }
+
+  ' Application Layer
+  package "application" #D5E7FF {
+    class MonitoringApplicationService {
+      -monitoring_repository: MonitoringRepository
+      -monitoring_service: MonitoringService
+      -device_repository: DeviceRepository
+      +__init__()
+      +create_monitoring_record(device_id, temperature, humidity, latitude, longitude, created_at, api_key): MonitoringRecord
+    }
+  }
+
+  ' Infrastructure Layer
+  package "infrastructure" #C9DFFF {
+    class MonitoringRecordModel {
+      id: AutoField
+      device_id: CharField
+      temperature: FloatField
+      humidity: FloatField
+      latitude: FloatField
+      longitude: FloatField
+      created_at: DateTimeField
+    }
+
+    class MonitoringRepository {
+      +save(monitoring_record): MonitoringRecord
+    }
+  }
+
+  ' Interface Layer
+  package "interfaces" #BCCEFF {
+    class monitoring_api {
+      +create_monitoring_record(): tuple
+    }
+  }
+}
+
+package "Control Bounded Context" #FFEBDE {
+  ' Domain Layer
+  package "domain" #FFF2E8 {
+    class ActuationCommand {
+      id: int
+      device_id: str
+      action: str
+      created_at: datetime
+      +__init__(device_id, action, created_at, id)
+    }
+
+    class ActuationService {
+      +__init__()
+      +evaluate_actions(record: MonitoringRecord): list[str]
+    }
+  }
+
+  ' Application Layer
+  package "application" #FFE6D5 {
+    class ActuationApplicationService {
+      -actuation_repository: ActuationRepository
+      -actuation_service: ActuationService
+      -device_repository: DeviceRepository
+      +__init__()
+      +execute_actuation(record: MonitoringRecord, api_key): list[ActuationCommand]
+    }
+  }
+
+  ' Infrastructure Layer
+  package "infrastructure" #FFDAC1 {
+    class ActuationCommandModel {
+      id: AutoField
+      device_id: CharField
+      action: CharField
+      created_at: DateTimeField
+    }
+
+    class ActuationRepository {
+      +save(actuation_command): ActuationCommand
+    }
+
+    class ActuatorController {
+      +execute(action: str): void
+    }
+  }
+
+  ' Interface Layer
+  package "interfaces" #FFCEAE {
+    class control_api {
+      +trigger_actuation(): tuple
+    }
+  }
+}
+
+package "IAM Bounded Context" #E8FFE8 {
+  ' Domain Layer
+  package "domain" #FFF2E8 {
+    class Device {
+      device_id: str
+      api_key: str
+      created_at: datetime
+      +__init__(device_id, api_key, created_at)
+    }
+
+    class AuthService {
+      +__init__()
+      +authenticate(device): bool
+    }
+  }
+
+  ' Application Layer
+  package "application" #FFE6D5 {
+    class AuthApplicationService {
+      -device_repository: DeviceRepository
+      -auth_service: AuthService
+      +__init__()
+      +authenticate(device_id, api_key): bool
+      +get_or_create_test_device(): Device
+    }
+  }
+
+  ' Infrastructure Layer
+  package "infrastructure" #FFDAC1 {
+    class DeviceModel {
+      device_id: CharField
+      api_key: CharField
+      created_at: DateTimeField
+    }
+
+    class DeviceRepository {
+      +find_by_id_and_api_key(device_id, api_key): Device
+      +get_or_create_test_device(): Device
+    }
+  }
+
+  ' Interface Layer
+  package "interfaces" #FFCEAE {
+    class iam_api {
+      +authenticate_request(): tuple
+    }
+  }
+}
+
+package "Shared Components" #E8FFE8 {
+  package "infrastructure" #D1FFD1 {
+    class db {
+      +connect()
+      +create_tables()
+      +close()
+    }
+
+    class init_db {
+      +init_db()
+    }
+  }
+}
+
+' Main application
+class app {
+  +setup()
+  +run()
+}
+
+' Relationships
+
+' Monitoring bounded context relationships
+MonitoringApplicationService --> MonitoringRepository: uses
+MonitoringApplicationService --> MonitoringService: uses
+MonitoringApplicationService --> DeviceRepository: uses
+MonitoringRepository --> MonitoringRecordModel: uses
+MonitoringRepository ..> MonitoringRecord: creates
+MonitoringService ..> MonitoringRecord: creates
+monitoring_api --> MonitoringApplicationService: uses
+
+' Control bounded context relationships
+ActuationApplicationService --> ActuationRepository: uses
+ActuationApplicationService --> ActuationService: uses
+ActuationApplicationService --> DeviceRepository: uses
+ActuationRepository --> ActuationCommandModel: uses
+ActuationRepository ..> ActuationCommand: creates
+ActuationService ..> MonitoringRecord: evaluates
+ActuationService ..> ActuationCommand: creates
+ActuationApplicationService --> ActuatorController: uses
+control_api --> ActuationApplicationService: uses
+
+' IAM bounded context relationships
+AuthApplicationService --> DeviceRepository: uses
+AuthApplicationService --> AuthService: uses
+DeviceRepository --> DeviceModel: uses
+DeviceRepository ..> Device: creates
+AuthService ..> Device: authenticates
+iam_api --> AuthApplicationService: uses
+
+' Cross-context relationships
+MonitoringApplicationService ..> Device: validates
+monitoring_api ..> iam_api: authenticate_request
+control_api ..> iam_api: authenticate_request
+
+' Database relationships
+MonitoringRecordModel --> db: uses
+ActuationCommandModel --> db: uses
+DeviceModel --> db: uses
+init_db ..> MonitoringRecordModel: creates tables
+init_db ..> ActuationCommandModel: creates tables
+init_db ..> DeviceModel: creates tables
+app ..> init_db: initializes
+app ..> monitoring_api: registers
+app ..> control_api: registers
+app ..> iam_api: registers
+@enduml
