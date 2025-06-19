@@ -153,7 +153,8 @@ flowchart LR
   ESP32 -->|HTTP POST| Monitoring API
   Monitoring API -->|persist| SQLite
   Monitoring API -->|Cloud POST| Cloud API
-  Monitoring API -->|evaluate & MQTT| Control API -->|MQTT pub| Actuators
+  Monitoring API -->|evaluate &amp; MQTT| Control API
+  Control API -->|MQTT pub| Actuators
   ESP32 -->|MQTT sub| Actuators
 ```
 
