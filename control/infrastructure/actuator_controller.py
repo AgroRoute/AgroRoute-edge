@@ -3,7 +3,7 @@ import paho.mqtt.client as mqtt
 from control.domain.entities import ActuationCommand
 class ActuatorController:
     def __init__(self,
-                 broker: str = "test.mosquitto.org",
+                 broker: str = "38.25.66.132",
                  port: int  = 1883):
         self.client = mqtt.Client()
         self.client.connect(broker, port)

@@ -159,5 +159,89 @@ flowchart LR
 ```
 
 ---
+## 🛰️ Configuración de MQTT con Mosquitto
+
+### 1. Instalación de Mosquitto (Ubuntu)
+
+Instala el broker Mosquitto y sus herramientas de línea de comandos:
+
+```bash
+sudo apt update
+sudo apt install mosquitto mosquitto-clients
+```
+
+Habilita el servicio para que inicie automáticamente y verifica su estado:
+
+```bash
+sudo systemctl enable mosquitto
+sudo systemctl start mosquitto
+sudo systemctl status mosquitto
+```
+
+---
+
+### 2. Habilitar conexiones externas (toda la red)
+
+Edita el archivo de configuración principal:
+
+```bash
+sudo nano /etc/mosquitto/mosquitto.conf
+```
+
+Agrega al final del archivo:
+
+```conf
+listener 1883
+allow_anonymous true
+log_dest file /var/log/mosquitto/mosquitto.log
+log_type all
+connection_messages true
+```
+
+Reinicia Mosquitto para aplicar los cambios:
+
+```bash
+sudo systemctl restart mosquitto
+```
+
+Verifica que esté escuchando en el puerto 1883:
+
+```bash
+sudo netstat -tulnp | grep mosquitto
+```
+
+---
+
+### 3. Escuchar mensajes MQTT (suscripciones)
+
+**a. Todos los mensajes del dispositivo agro-route-001:**
+
+```bash
+mosquitto_sub -h localhost -t "agroroute/agro-route-001/#" -v
+```
+
+**b. Un solo actuador (ej. solo el ventilador):**
+
+```bash
+mosquitto_sub -h localhost -t "agroroute/agro-route-001/fan" -v
+```
+
+**c. Todos los tópicos del broker:**
+
+```bash
+mosquitto_sub -h localhost -t "#" -v
+```
+
+---
+
+### 4. Publicar mensajes de prueba
+
+```bash
+mosquitto_pub -h localhost -t "agroroute/agro-route-001/fan" -m "ON"
+mosquitto_pub -h localhost -t "agroroute/agro-route-001/heater" -m "OFF"
+```
+---
+
+
 
 © 2025 AgroRoute
