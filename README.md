@@ -150,12 +150,12 @@ Todas requieren header `X-API-Key: test-api-key-123`.
 
 ```mermaid
 flowchart LR
-  ESP32 -->|HTTP POST| Monitoring API
-  Monitoring API -->|persist| SQLite
-  Monitoring API -->|Cloud POST| Cloud API
-  Monitoring API -->|evaluate &amp; MQTT| Control API
-  Control API -->|MQTT pub| Actuators
-  ESP32 -->|MQTT sub| Actuators
+  ESP32 -->|"HTTP POST"| Monitoring_API
+  Monitoring_API -->|"persist"| SQLite
+  Monitoring_API -->|"Cloud POST"| Cloud_API
+  Monitoring_API -->|"evaluate & MQTT"| Control_API
+  Control_API -->|"MQTT pub"| Actuators
+  ESP32 -->|"MQTT sub"| Actuators
 ```
 
 ---
